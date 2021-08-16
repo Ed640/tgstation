@@ -62,6 +62,8 @@
 
 	///for nonhuman bodypart (e.g. monkey)
 	var/animal_origin
+	//for all bodyparts
+	var/part_origin = HUMAN_BODY
 	///whether it can be dismembered with a weapon.
 	var/dismemberable = 1
 
@@ -104,6 +106,9 @@
 	var/obj/item/stack/current_gauze
 	/// If something is currently grasping this bodypart and trying to staunch bleeding (see [/obj/item/self_grasp])
 	var/obj/item/self_grasp/grasped_by
+
+	///A list of all the external organs we've got stored to draw horns, wings and stuff with (special because we are actually in the limbs unlike normal organs :/ )
+	var/list/obj/item/organ/external/external_organs = list()
 
 
 /obj/item/bodypart/Initialize(mapload)
@@ -749,6 +754,13 @@
 		should_draw_greyscale = FALSE
 		no_update = TRUE
 
+	if(HAS_TRAIT(limb_owner, TRAIT_INVISIBLE_MAN) && is_organic_limb())
+		species_id = "invisible" //overrides species_id
+		dmg_overlay_type = "" //no damage overlay shown when invisible since the wounds themselves are invisible.
+		should_draw_gender = FALSE
+		should_draw_greyscale = FALSE
+		no_update = TRUE
+
 	if(no_update)
 		return
 
@@ -889,8 +901,9 @@
 		aux = image(limb.icon, "[species_id]_[aux_zone]", -aux_layer, image_dir)
 		. += aux
 
+	var/draw_color
 	if(should_draw_greyscale)
-		var/draw_color = mutation_color || species_color || (skin_tone && skintone2hex(skin_tone))
+		draw_color = mutation_color || species_color || (skin_tone && skintone2hex(skin_tone))
 		if(draw_color)
 			limb.color = "#[draw_color]"
 			if(aux_zone)
@@ -907,6 +920,15 @@
 			aux_em_block.dir = image_dir
 			aux_em_block.color = GLOB.em_block_color
 			aux.overlays += aux_em_block
+
+	//Draw external organs like horns and frills
+	for(var/obj/item/organ/external/external_organ in external_organs)
+		if(!dropped && !external_organ.can_draw_on_bodypart(owner))
+			continue
+		//Some externals have multiple layers for background, foreground and between
+		for(var/external_layer in external_organ.all_layers)
+			if(external_organ.layers & external_layer)
+				external_organ.get_overlays(., image_dir, external_organ.bitflag_to_layer(external_layer), icon_gender, "#[draw_color]")
 
 /obj/item/bodypart/deconstruct(disassembled = TRUE)
 	drop_organs()

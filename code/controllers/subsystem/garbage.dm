@@ -29,7 +29,7 @@ SUBSYSTEM_DEF(garbage)
 	runlevels = RUNLEVELS_DEFAULT | RUNLEVEL_LOBBY
 	init_order = INIT_ORDER_GARBAGE
 
-	var/list/collection_timeout = list(2 MINUTES, 10 SECONDS) // deciseconds to wait before moving something up in the queue to the next level
+	var/list/collection_timeout = list(5 MINUTES, 10 SECONDS) // deciseconds to wait before moving something up in the queue to the next level
 
 	//Stat tracking
 	var/delslasttick = 0 // number of del()'s we've done this tick
@@ -49,6 +49,10 @@ SUBSYSTEM_DEF(garbage)
 	var/list/queues
 	#ifdef REFERENCE_TRACKING
 	var/list/reference_find_on_fail = list()
+	#ifdef REFERENCE_TRACKING_DEBUG
+	//Should we save found refs. Used for unit testing
+	var/should_save_refs = FALSE
+	#endif
 	#endif
 
 
