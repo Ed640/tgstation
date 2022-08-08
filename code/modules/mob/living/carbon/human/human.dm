@@ -25,11 +25,11 @@
 	AddComponent(/datum/component/bloodysoles/feet)
 	AddElement(/datum/element/ridable, /datum/component/riding/creature/human)
 	AddElement(/datum/element/strippable, GLOB.strippable_human_items, /mob/living/carbon/human/.proc/should_strip)
-	GLOB.human_list += src
 	var/static/list/loc_connections = list(
 		COMSIG_ATOM_ENTERED = .proc/on_entered,
 	)
 	AddElement(/datum/element/connect_loc, loc_connections)
+	GLOB.human_list += src
 
 /mob/living/carbon/human/proc/setup_human_dna()
 	//initialize dna. for spawned humans; overwritten by other code
@@ -73,8 +73,6 @@
 
 /mob/living/carbon/human/get_status_tab_items()
 	. = ..()
-	. += "Combat mode: [combat_mode ? "On" : "Off"]"
-	. += "Move Mode: [m_intent]"
 	if (internal)
 		var/datum/gas_mixture/internal_air = internal.return_air()
 		if (!internal_air)
@@ -94,11 +92,6 @@
 			. += ""
 			. += "Chemical Storage: [changeling.chem_charges]/[changeling.total_chem_storage]"
 			. += "Absorbed DNA: [changeling.absorbed_count]"
-
-// called when something steps onto a human
-/mob/living/carbon/human/proc/on_entered(datum/source, atom/movable/AM)
-	SIGNAL_HANDLER
-	spreadFire(AM)
 
 /mob/living/carbon/human/reset_perspective(atom/new_eye, force_reset = FALSE)
 	if(dna?.species?.prevent_perspective_change && !force_reset) // This is in case a species needs to prevent perspective changes in certain cases, like Dullahans preventing perspective changes when they're looking through their head.
@@ -371,21 +364,25 @@
 
 	..() //end of this massive fucking chain. TODO: make the hud chain not spooky. - Yeah, great job doing that.
 
+//called when something steps onto a human
+/mob/living/carbon/human/proc/on_entered(datum/source, atom/movable/AM)
+	SIGNAL_HANDLER
+	spreadFire(AM)
 
 /mob/living/carbon/human/proc/canUseHUD()
 	return (mobility_flags & MOBILITY_USE)
 
 /mob/living/carbon/human/can_inject(mob/user, target_zone, injection_flags)
 	. = TRUE // Default to returning true.
-	if(user && !target_zone)
-		target_zone = user.zone_selected
 	// we may choose to ignore species trait pierce immunity in case we still want to check skellies for thick clothing without insta failing them (wounds)
 	if(injection_flags & INJECT_CHECK_IGNORE_SPECIES)
 		if(HAS_TRAIT_NOT_FROM(src, TRAIT_PIERCEIMMUNE, SPECIES_TRAIT))
 			. = FALSE
 	else if(HAS_TRAIT(src, TRAIT_PIERCEIMMUNE))
 		. = FALSE
-	var/obj/item/bodypart/the_part = get_bodypart(target_zone) || get_bodypart(BODY_ZONE_CHEST)
+	if(user && !target_zone)
+		target_zone = user.zone_selected
+	var/obj/item/bodypart/the_part = isbodypart(target_zone) ? target_zone : get_bodypart(check_zone(target_zone)) //keep these synced
 	// Loop through the clothing covering this bodypart and see if there's any thiccmaterials
 	if(!(injection_flags & INJECT_CHECK_PENETRATE_THICK))
 		for(var/obj/item/clothing/iter_clothing in clothingonpart(the_part))
@@ -396,7 +393,9 @@
 /mob/living/carbon/human/try_inject(mob/user, target_zone, injection_flags)
 	. = ..()
 	if(!. && (injection_flags & INJECT_TRY_SHOW_ERROR_MESSAGE) && user)
-		var/obj/item/bodypart/the_part = get_bodypart(target_zone || check_zone(user.zone_selected))
+		if(!target_zone)
+			target_zone = user.zone_selected
+		var/obj/item/bodypart/the_part = isbodypart(target_zone) ? target_zone : get_bodypart(check_zone(target_zone)) //keep these synced
 		to_chat(user, span_alert("There is no exposed flesh or thin material on [p_their()] [the_part.name]."))
 
 /mob/living/carbon/human/assess_threat(judgement_criteria, lasercolor = "", datum/callback/weaponcheck=null)
@@ -856,8 +855,8 @@
 	if(href_list[VV_HK_PURRBATION])
 		if(!check_rights(R_SPAWN))
 			return
-		if(!ishumanbasic(src))
-			to_chat(usr, "This can only be done to the basic human species at the moment.")
+		if(!ishuman(src))
+			to_chat(usr, "This can only be done to human species at the moment.")
 			return
 		var/success = purrbation_toggle(src)
 		if(success)
