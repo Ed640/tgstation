@@ -1,16 +1,5 @@
-//Modular computer/NTNet defines
-
-//Modular computer part defines
-#define MC_HDD "HDD"
-#define MC_SDD "SDD"
-#define MC_CARD "CARD"
-#define MC_CARD2 "CARD2"
-#define MC_NET "NET"
-#define MC_PRINT "PRINT"
-#define MC_CELL "CELL"
-
 //NTNet stuff, for modular computers
-									// NTNet module-configuration values. Do not change these. If you need to add another use larger number (5..6..7 etc)
+// NTNet module-configuration values. Do not change these. If you need to add another use larger number (5..6..7 etc)
 #define NTNET_SOFTWAREDOWNLOAD 1 // Downloads of software from NTNet
 #define NTNET_PEERTOPEER 2 // P2P transfers of files between devices
 #define NTNET_COMMUNICATION 3 // Communication (messaging)
@@ -43,3 +32,19 @@
 
 #define DETOMATIX_RESIST_MINOR 1
 #define DETOMATIX_RESIST_MAJOR 2
+
+// NTNet connection signals
+///When you're away from the station/mining base and not on a console, you can't access the internet
+#define NTNET_NO_SIGNAL 0
+///Low signal, so away from the station, but still connected
+#define NTNET_LOW_SIGNAL 1
+///On station, good signal
+#define NTNET_GOOD_SIGNAL 2
+///Using a Computer, ethernet-connected.
+#define NTNET_ETHERNET_SIGNAL 3
+
+/// The default ringtone of the Messenger app.
+#define MESSENGER_RINGTONE_DEFAULT "beep"
+
+/// The maximum length of the ringtone of the Messenger app.
+#define MESSENGER_RINGTONE_MAX_LENGTH 20

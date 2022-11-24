@@ -51,7 +51,7 @@
 	if(say_mod && tongue_owner.dna && tongue_owner.dna.species)
 		tongue_owner.dna.species.say_mod = say_mod
 	if (modifies_speech)
-		RegisterSignal(tongue_owner, COMSIG_MOB_SAY, .proc/handle_speech)
+		RegisterSignal(tongue_owner, COMSIG_MOB_SAY, PROC_REF(handle_speech))
 	tongue_owner.UnregisterSignal(tongue_owner, COMSIG_MOB_SAY)
 
 	/* This could be slightly simpler, by making the removal of the
@@ -68,7 +68,7 @@
 	if(say_mod && tongue_owner.dna && tongue_owner.dna.species)
 		tongue_owner.dna.species.say_mod = initial(tongue_owner.dna.species.say_mod)
 	UnregisterSignal(tongue_owner, COMSIG_MOB_SAY)
-	tongue_owner.RegisterSignal(tongue_owner, COMSIG_MOB_SAY, /mob/living/carbon/.proc/handle_tongueless_speech)
+	tongue_owner.RegisterSignal(tongue_owner, COMSIG_MOB_SAY, TYPE_PROC_REF(/mob/living/carbon/, handle_tongueless_speech))
 	REMOVE_TRAIT(tongue_owner, TRAIT_AGEUSIA, ORGAN_TRAIT)
 	// Carbons by default start with NO_TONGUE_TRAIT caused TRAIT_AGEUSIA
 	ADD_TRAIT(tongue_owner, TRAIT_AGEUSIA, NO_TONGUE_TRAIT)
@@ -121,7 +121,7 @@
 /datum/action/item_action/organ_action/statue/New(Target)
 	. = ..()
 	statue = new
-	RegisterSignal(statue, COMSIG_PARENT_QDELETING, .proc/statue_destroyed)
+	RegisterSignal(statue, COMSIG_PARENT_QDELETING, PROC_REF(statue_destroyed))
 
 /datum/action/item_action/organ_action/statue/Destroy()
 	UnregisterSignal(statue, COMSIG_PARENT_QDELETING)
@@ -164,7 +164,7 @@
 		statue.forceMove(get_turf(becoming_statue))
 		becoming_statue.forceMove(statue)
 		statue.update_integrity(becoming_statue.health)
-		RegisterSignal(becoming_statue, COMSIG_MOVABLE_MOVED, .proc/human_left_statue)
+		RegisterSignal(becoming_statue, COMSIG_MOVABLE_MOVED, PROC_REF(human_left_statue))
 
 	//somehow they used an exploit/teleportation to leave statue, lets clean up
 /datum/action/item_action/organ_action/statue/proc/human_left_statue(atom/movable/mover, atom/oldloc, direction)
@@ -361,6 +361,10 @@ GLOBAL_LIST_INIT(english_to_zombie, list())
 	languages_possible = languages_possible_alien
 
 /obj/item/organ/internal/tongue/alien/modify_speech(datum/source, list/speech_args)
+	var/datum/saymode/xeno/hivemind = speech_args[SPEECH_SAYMODE]
+	if(hivemind)
+		return
+
 	playsound(owner, SFX_HISS, 25, TRUE, TRUE)
 
 /obj/item/organ/internal/tongue/bone
@@ -474,76 +478,3 @@ GLOBAL_LIST_INIT(english_to_zombie, list())
 /obj/item/organ/internal/tongue/ethereal/Initialize(mapload)
 	. = ..()
 	languages_possible = languages_possible_ethereal
-
-//Sign Language Tongue - yep, that's how you speak sign language.
-/obj/item/organ/internal/tongue/tied
-	name = "tied tongue"
-	desc = "If only one had a sword so we may finally untie this knot."
-	say_mod = "signs"
-	icon_state = "tonguetied"
-	modifies_speech = TRUE
-	// The tonal indicator shown when we finish sending a message. If it's empty, none appears.
-	var/tonal_indicator = null
-	// The timerid for our tonal indicator
-	var/tonal_timerid
-
-/obj/item/organ/internal/tongue/tied/Insert(mob/living/carbon/signer, special = FALSE, drop_if_replaced = TRUE)
-	. = ..()
-	signer.verb_ask = "signs"
-	signer.verb_exclaim = "signs"
-	signer.verb_whisper = "subtly signs"
-	signer.verb_sing = "rythmically signs"
-	signer.verb_yell = "emphatically signs"
-	signer.bubble_icon = "signlang"
-	ADD_TRAIT(signer, TRAIT_SIGN_LANG, ORGAN_TRAIT)
-	REMOVE_TRAIT(signer, TRAIT_MUTE, ORGAN_TRAIT)
-
-/obj/item/organ/internal/tongue/tied/Remove(mob/living/carbon/speaker, special = FALSE)
-	..()
-	speaker.verb_ask = initial(speaker.verb_ask)
-	speaker.verb_exclaim = initial(speaker.verb_exclaim)
-	speaker.verb_whisper = initial(speaker.verb_whisper)
-	speaker.verb_sing = initial(speaker.verb_sing)
-	speaker.verb_yell = initial(speaker.verb_yell)
-	speaker.bubble_icon = initial(speaker.bubble_icon)
-	REMOVE_TRAIT(speaker, TRAIT_SIGN_LANG, ORGAN_TRAIT)
-
-/obj/item/organ/internal/tongue/tied/modify_speech(datum/source, list/speech_args)
-	// The message we send instead of our normal one
-	var/new_message
-	// The original message
-	var/message = speech_args[SPEECH_MESSAGE]
-	// Is there a !
-	var/exclamation_found = findtext(message, "!")
-	// Is there a ?
-	var/question_found = findtext(message, "?")
-	new_message = message
-	if(exclamation_found)
-		new_message = replacetext(new_message, "!", ".")
-	if(question_found)
-		new_message = replacetext(new_message, "?", ".")
-	speech_args[SPEECH_MESSAGE] = new_message
-
-	// Cut our last overlay before we replace it
-	if(timeleft(tonal_timerid) > 0)
-		remove_tonal_indicator()
-		deltimer(tonal_timerid)
-	// Prioritize questions
-	if(question_found)
-		tonal_indicator = mutable_appearance('icons/mob/effects/talk.dmi', "signlang1", TYPING_LAYER)
-		owner.visible_message(span_notice("[owner] lowers [owner.p_their()] eyebrows."))
-	else if(exclamation_found)
-		tonal_indicator = mutable_appearance('icons/mob/effects/talk.dmi', "signlang2", TYPING_LAYER)
-		owner.visible_message(span_notice("[owner] raises [owner.p_their()] eyebrows."))
-	// If either an exclamation or question are found
-	if(!isnull(tonal_indicator) && owner.client?.typing_indicators)
-		owner.add_overlay(tonal_indicator)
-		tonal_timerid = addtimer(CALLBACK(src, .proc/remove_tonal_indicator), 2.5 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE | TIMER_STOPPABLE | TIMER_DELETE_ME)
-	else // If we're not gonna use it, just be sure we get rid of it
-		tonal_indicator = null
-
-/obj/item/organ/internal/tongue/tied/proc/remove_tonal_indicator()
-	if(isnull(tonal_indicator))
-		return
-	owner.cut_overlay(tonal_indicator)
-	tonal_indicator = null
