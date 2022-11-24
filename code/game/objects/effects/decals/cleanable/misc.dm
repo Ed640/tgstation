@@ -156,14 +156,7 @@
 		if(isflyperson(H))
 			playsound(get_turf(src), 'sound/items/drink.ogg', 50, TRUE) //slurp
 			H.visible_message(span_alert("[H] extends a small proboscis into the vomit pool, sucking it with a slurping sound."))
-			if(reagents)
-				for(var/datum/reagent/R in reagents.reagent_list)
-					if (istype(R, /datum/reagent/consumable))
-						var/datum/reagent/consumable/nutri_check = R
-						if(nutri_check.nutriment_factor >0)
-							H.adjust_nutrition(nutri_check.nutriment_factor * nutri_check.volume)
-							reagents.remove_reagent(nutri_check.type,nutri_check.volume)
-			reagents.trans_to(H, reagents.total_volume, transfered_by = user)
+			reagents.trans_to(H, reagents.total_volume, transfered_by = user, methods = INGEST)
 			qdel(src)
 
 /obj/effect/decal/cleanable/vomit/old
@@ -321,6 +314,8 @@
 /obj/effect/decal/cleanable/ants/update_icon_state()
 	if(istype(src, /obj/effect/decal/cleanable/ants/fire)) //i fucking hate this but you're forced to call parent in update_icon_state()
 		return ..()
+	if(!(flags_1 & INITIALIZED_1))
+		return ..()
 
 	var/datum/component/caltrop/caltrop_comp = GetComponent(/datum/component/caltrop)
 	if(!caltrop_comp)
@@ -339,7 +334,7 @@
 
 /obj/effect/decal/cleanable/ants/update_overlays()
 	. = ..()
-	. += emissive_appearance(icon, "[icon_state]_light", alpha = src.alpha)
+	. += emissive_appearance(icon, "[icon_state]_light", src, alpha = src.alpha)
 
 /obj/effect/decal/cleanable/ants/fire_act(exposed_temperature, exposed_volume)
 	var/obj/effect/decal/cleanable/ants/fire/fire_ants = new(loc)
@@ -408,13 +403,13 @@
 
 	burn_amount -= 1
 	var/obj/effect/hotspot/hotspot = new hotspot_type(get_turf(src))
-	addtimer(CALLBACK(src, .proc/ignite_others), 0.5 SECONDS)
+	addtimer(CALLBACK(src, PROC_REF(ignite_others)), 0.5 SECONDS)
 
 	if(!burn_amount)
 		qdel(src)
 		return
 
-	RegisterSignal(hotspot, COMSIG_PARENT_QDELETING, .proc/burn_process)
+	RegisterSignal(hotspot, COMSIG_PARENT_QDELETING, PROC_REF(burn_process))
 
 /**
  * Ignites other oil pools around itself.

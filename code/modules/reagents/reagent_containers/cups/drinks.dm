@@ -17,7 +17,7 @@
 	if(!.) //if the bottle wasn't caught
 		smash(hit_atom, throwingdatum?.thrower, TRUE)
 
-/obj/item/reagent_containers/cup/glass/proc/smash(atom/target, mob/thrower, ranged = FALSE)
+/obj/item/reagent_containers/cup/glass/proc/smash(atom/target, mob/thrower, ranged = FALSE, break_top = FALSE)
 	if(!isGlass)
 		return
 	if(QDELING(src) || !target) //Invalid loc
@@ -26,7 +26,7 @@
 		return
 	SplashReagents(target, ranged, override_spillable = TRUE)
 	var/obj/item/broken_bottle/B = new (loc)
-	B.mimic_broken(src, target)
+	B.mimic_broken(src, target, break_top)
 	qdel(src)
 	target.Bumped(B)
 
@@ -57,6 +57,7 @@
 	name = "gold cup"
 	desc = "You're winner!"
 	icon_state = "golden_cup"
+	inhand_icon_state = "golden_cup"
 	w_class = WEIGHT_CLASS_BULKY
 	force = 14
 	throwforce = 10
@@ -101,6 +102,28 @@
 	resistance_flags = FREEZE_PROOF
 	isGlass = FALSE
 	drink_type = BREAKFAST
+	var/lid_open = 0
+
+/obj/item/reagent_containers/cup/glass/coffee/no_lid
+	icon_state = "coffee_empty"
+	list_reagents = null
+
+/obj/item/reagent_containers/cup/glass/coffee/examine(mob/user)
+	. = ..()
+	. += span_notice("Alt-click to toggle cup lid.")
+	return
+
+/obj/item/reagent_containers/cup/glass/coffee/AltClick(mob/user)
+	lid_open = !lid_open
+	update_icon_state()
+	return ..()
+
+/obj/item/reagent_containers/cup/glass/coffee/update_icon_state()
+	if(lid_open)
+		icon_state = reagents.total_volume ? "coffee_full" : "coffee_empty"
+	else
+		icon_state = "coffee"
+	return ..()
 
 /obj/item/reagent_containers/cup/glass/ice
 	name = "ice cup"
@@ -176,7 +199,7 @@
 	desc = "A bottle of water filled at an old Earth bottling facility."
 	icon = 'icons/obj/drinks.dmi'
 	icon_state = "smallbottle"
-	inhand_icon_state = "bottle"
+	inhand_icon_state = null
 	list_reagents = list(/datum/reagent/water = 49.5, /datum/reagent/fluorine = 0.5)//see desc, don't think about it too hard
 	custom_materials = list(/datum/material/plastic=1000)
 	volume = 50
