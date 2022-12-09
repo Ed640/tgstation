@@ -594,6 +594,7 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_PROSOPAGNOSIA "prosopagnosia"
 #define TRAIT_TAGGER "tagger"
 #define TRAIT_PHOTOGRAPHER "photographer"
+#define TRAIT_CARDCOLLECTOR "cardcollector"
 #define TRAIT_MUSICIAN "musician"
 #define TRAIT_LIGHT_DRINKER "light_drinker"
 #define TRAIT_EMPATH "empath"
@@ -981,3 +982,5 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 
 /// This target has recently been shot by a marksman coin and is very briefly immune to being hit by one again to prevent recursion
 #define TRAIT_RECENTLY_COINED "trait_recently_coined"
+
+///
