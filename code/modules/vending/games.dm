@@ -72,6 +72,12 @@
 				/obj/item/razor = 3,
 				/obj/item/storage/card_binder = 10,
 				/obj/item/storage/dice = 10,
+				/obj/item/cardpack/tdatet = 20,
+				/obj/item/cardpack/tdatet_base = 20,
+				/obj/item/cardpack/tdatet_box = 20,
+				/obj/item/cardpack/tdatet/green = 10,
+				/obj/item/cardpack/tdatet/blue = 10,
+				/obj/item/cardpack/tdatet/mixed = 10,
 			),
 		),
 	)
