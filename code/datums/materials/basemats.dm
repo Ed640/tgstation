@@ -24,6 +24,7 @@
 	integrity_modifier = 0.1
 	sheet_type = /obj/item/stack/sheet/glass
 	shard_type = /obj/item/shard
+	debris_type = /obj/effect/decal/cleanable/glass
 	value_per_unit = 0.0025
 	beauty_modifier = 0.05
 	armor_modifiers = list(MELEE = 0.2, BULLET = 0.2, ENERGY = 1, BIO = 0.2, FIRE = 1, ACID = 0.2)
@@ -31,6 +32,16 @@
 /datum/material/glass/on_accidental_mat_consumption(mob/living/carbon/victim, obj/item/source_item)
 	victim.apply_damage(10, BRUTE, BODY_ZONE_HEAD, wound_bonus = 5, sharpness = TRUE) //cronch
 	return TRUE
+
+/datum/material/glass/on_applied_obj(atom/source, amount, material_flags)
+	. = ..()
+	if(!isstack(source))
+		source.AddElement(/datum/element/shatters_when_thrown, shard_type, round(amount / SHEET_MATERIAL_AMOUNT), SFX_SHATTER)
+
+/datum/material/glass/on_removed(atom/source, amount, material_flags)
+	. = ..()
+
+	source.RemoveElement(/datum/element/shatters_when_thrown, shard_type)
 
 /*
 Color matrices are like regular colors but unlike with normal colors, you can go over 255 on a channel.
