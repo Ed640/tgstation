@@ -65,7 +65,9 @@
 		return FALSE
 
 	if(!forced)
-		if(!check_teleport_valid(teleatom, destination, channel))
+		if(!check_teleport_valid(teleatom, destturf, channel, original_destination = destination))
+			if(ismob(teleatom))
+				teleatom.balloon_alert(teleatom, "something holds you back!")
 			return FALSE
 
 	if(isobserver(teleatom))
@@ -131,23 +133,13 @@
 		return
 
 	var/list/floor_gases = floor_gas_mixture.gases
-	var/list/gases_to_check = list(/datum/gas/oxygen, /datum/gas/nitrogen, /datum/gas/carbon_dioxide, /datum/gas/plasma)
-	var/trace_gases
-	for(var/id in floor_gases)
-		if(id in gases_to_check)
-			continue
-		trace_gases = TRUE
-		break
-
-	// Can most things breathe?
-	if(trace_gases)
-		return
-	if(!(floor_gases[/datum/gas/oxygen] && floor_gases[/datum/gas/oxygen][MOLES] >= 16))
-		return
-	if(floor_gases[/datum/gas/plasma])
-		return
-	if(floor_gases[/datum/gas/carbon_dioxide] && floor_gases[/datum/gas/carbon_dioxide][MOLES] >= 10)
-		return
+	var/static/list/gases_to_check = list(
+		/datum/gas/oxygen = list(16, 100),
+		/datum/gas/nitrogen,
+		/datum/gas/carbon_dioxide = list(0, 10)
+	)
+	if(!check_gases(floor_gases, gases_to_check))
+		return FALSE
 
 	// Aim for goldilocks temperatures and pressure
 	if((floor_gas_mixture.temperature <= 270) || (floor_gas_mixture.temperature >= 360))
@@ -193,7 +185,7 @@
 		return pick(turfs)
 
 /// Validates that the teleport being attempted is valid or not
-/proc/check_teleport_valid(atom/teleported_atom, atom/destination, channel)
+/proc/check_teleport_valid(atom/teleported_atom, atom/destination, channel, atom/original_destination = null)
 	var/area/origin_area = get_area(teleported_atom)
 	var/turf/origin_turf = get_turf(teleported_atom)
 
@@ -201,6 +193,11 @@
 	var/turf/destination_turf = get_turf(destination)
 
 	if(HAS_TRAIT(teleported_atom, TRAIT_NO_TELEPORT))
+		return FALSE
+
+	// prevent unprecise teleports from landing you outside of the destination's reserved area
+	if(is_reserved_level(destination_turf.z) && istype(original_destination) \
+		&& SSmapping.get_reservation_from_turf(destination_turf) != SSmapping.get_reservation_from_turf(get_turf(original_destination)))
 		return FALSE
 
 	if((origin_area.area_flags & NOTELEPORT) || (destination_area.area_flags & NOTELEPORT))
